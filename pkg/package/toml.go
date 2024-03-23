@@ -69,6 +69,7 @@ func (dep *Dependencies) MarshalTOML() string {
 		}
 		sb.WriteString(NEWLINE)
 	}
+	sb.WriteString(NEWLINE)
 	return sb.String()
 }
 
@@ -115,23 +116,24 @@ func (source *Source) MarshalTOML() string {
 	return sb.String()
 }
 
-const GIT_URL_PATTERN = "git = \"%s\""
-const GIT_TAG_PATTERN = "tag = \"%s\""
-const GIT_COMMIT_PATTERN = "commit = \"%s\""
+const GitUrlPattern = "git = \"%s\""
+const GitTagPattern = "tag = \"%s\""
+const GitCommitPattern = "commit = \"%s\""
+const OCIRefPattern = "oci = \"%s\""
 const SEPARATOR = ", "
 
 func (git *Git) MarshalTOML() string {
 	var sb strings.Builder
 	if len(git.Url) != 0 {
-		sb.WriteString(fmt.Sprintf(GIT_URL_PATTERN, git.Url))
+		sb.WriteString(fmt.Sprintf(GitUrlPattern, git.Url))
 	}
 	if len(git.Tag) != 0 {
 		sb.WriteString(SEPARATOR)
-		sb.WriteString(fmt.Sprintf(GIT_TAG_PATTERN, git.Tag))
+		sb.WriteString(fmt.Sprintf(GitTagPattern, git.Tag))
 	}
 	if len(git.Commit) != 0 {
 		sb.WriteString(SEPARATOR)
-		sb.WriteString(fmt.Sprintf(GIT_COMMIT_PATTERN, git.Commit))
+		sb.WriteString(fmt.Sprintf(GitCommitPattern, git.Commit))
 	}
 	return sb.String()
 }
@@ -139,11 +141,11 @@ func (git *Git) MarshalTOML() string {
 func (oci *Oci) MarshalTOML() string {
 	var sb strings.Builder
 	if len(oci.Reg) != 0 && len(oci.Repo) != 0 {
-		ociStr := fmt.Sprintf("oci://%s/%s", oci.Reg, oci.Repo)
-		sb.WriteString(ociStr)
+		ociRef := fmt.Sprintf("oci://%s/%s", oci.Reg, oci.Repo)
+		sb.WriteString(fmt.Sprintf(OCIRefPattern, ociRef))
 		if len(oci.Tag) != 0 {
 			sb.WriteString(SEPARATOR)
-			sb.WriteString(fmt.Sprintf(GIT_TAG_PATTERN, oci.Tag))
+			sb.WriteString(fmt.Sprintf(GitTagPattern, oci.Tag))
 		}
 		return sb.String()
 	}
