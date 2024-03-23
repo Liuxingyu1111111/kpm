@@ -10,6 +10,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"kcl-lang.io/kcl-go/pkg/kcl"
+
 	"kcl-lang.io/kpm/pkg/opt"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/runner"
@@ -202,7 +203,7 @@ func (dep *Dependency) IsFromLocal() bool {
 
 // FillDepInfo will fill registry information for a dependency.
 func (dep *Dependency) FillDepInfo() error {
-	if dep.Source.Oci != nil {
+	if dep.Source.Oci != nil && dep.Source.Oci.Reg == "" {
 		settings := settings.GetSettings()
 		if settings.ErrorEvent != nil {
 			return settings.ErrorEvent

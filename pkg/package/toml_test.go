@@ -8,6 +8,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/stretchr/testify/assert"
+
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
@@ -76,7 +77,7 @@ func TestUnMarshalTOML(t *testing.T) {
 	assert.Equal(t, modfile.Pkg.Name, "MyKcl")
 	assert.Equal(t, modfile.Pkg.Edition, "v0.0.1")
 	assert.Equal(t, modfile.Pkg.Version, "v0.0.1")
-	assert.Equal(t, len(modfile.Dependencies.Deps), 2)
+	assert.Equal(t, len(modfile.Dependencies.Deps), 3)
 	assert.NotEqual(t, modfile.Dependencies.Deps["MyKcl1"], nil)
 	assert.Equal(t, modfile.Dependencies.Deps["MyKcl1"].Name, "MyKcl1")
 	assert.Equal(t, modfile.Dependencies.Deps["MyKcl1"].FullName, "MyKcl1_v0.0.2")
@@ -89,6 +90,11 @@ func TestUnMarshalTOML(t *testing.T) {
 	assert.Equal(t, modfile.Dependencies.Deps["MyOciKcl1"].FullName, "MyOciKcl1_0.0.1")
 	assert.NotEqual(t, modfile.Dependencies.Deps["MyOciKcl1"].Source.Oci, nil)
 	assert.Equal(t, modfile.Dependencies.Deps["MyOciKcl1"].Source.Oci.Tag, "0.0.1")
+	assert.NotEqual(t, modfile.Dependencies.Deps["OCIPkg"], nil)
+	assert.Equal(t, modfile.Dependencies.Deps["OCIPkg"].Name, "OCIPkg")
+	assert.Equal(t, modfile.Dependencies.Deps["OCIPkg"].FullName, "OCIPkg_0.0.9")
+	assert.NotEqual(t, modfile.Dependencies.Deps["OCIPkg"].Source.Oci, nil)
+	assert.Equal(t, modfile.Dependencies.Deps["OCIPkg"].Source.Oci.Tag, "0.0.9")
 }
 
 func TestMarshalLockToml(t *testing.T) {

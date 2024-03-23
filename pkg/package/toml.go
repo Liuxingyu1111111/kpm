@@ -26,6 +26,8 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
+	"oras.land/oras-go/v2/registry"
+
 	"kcl-lang.io/kpm/pkg/reporter"
 )
 
@@ -288,20 +290,27 @@ func (dep *Dependency) UnmarshalModTOML(data interface{}) error {
 func (source *Source) UnmarshalModTOML(data interface{}) error {
 	meta, ok := data.(map[string]interface{})
 	if ok {
-		if _, ok := meta[LOCAL_PATH_FLAG].(string); ok {
+		if _, ok := meta[LocalPathFlag].(string); ok {
 			localPath := Local{}
 			err := localPath.UnmarshalModTOML(data)
 			if err != nil {
 				return err
 			}
 			source.Local = &localPath
-		} else {
+		} else if _, ok := meta[GitFlag]; ok {
 			git := Git{}
 			err := git.UnmarshalModTOML(data)
 			if err != nil {
 				return err
 			}
 			source.Git = &git
+		} else {
+			oci := Oci{}
+			err := oci.UnmarshalModTOML(data)
+			if err != nil {
+				return err
+			}
+			source.Oci = &oci
 		}
 	}
 
@@ -344,17 +353,33 @@ func (git *Git) UnmarshalModTOML(data interface{}) error {
 }
 
 func (oci *Oci) UnmarshalModTOML(data interface{}) error {
-	meta, ok := data.(string)
-	if !ok {
-		return fmt.Errorf("expected string, got %T", data)
-	}
+	tag, ok := data.(string)
+	if ok {
+		oci.Tag = tag
+	} else if meta, ok := data.(map[string]interface{}); ok {
+		if v, ok := meta["oci"].(string); ok {
+			ref, err := parseArtifactRef(v)
+			if err != nil {
+				return err
+			}
+			oci.Reg = ref.Registry
+			oci.Repo = ref.Repository
+		}
 
-	oci.Tag = meta
+		if v, ok := meta["tag"].(string); ok {
+			oci.Tag = v
+		}
+	} else {
+		return fmt.Errorf("unexpected data %T", data)
+	}
 
 	return nil
 }
 
-const LOCAL_PATH_FLAG = "path"
+const (
+	LocalPathFlag = "path"
+	GitFlag       = "git"
+)
 
 func (local *Local) UnmarshalModTOML(data interface{}) error {
 	meta, ok := data.(map[string]interface{})
@@ -362,7 +387,7 @@ func (local *Local) UnmarshalModTOML(data interface{}) error {
 		return fmt.Errorf("expected map[string]interface{}, got %T", data)
 	}
 
-	if v, ok := meta[LOCAL_PATH_FLAG].(string); ok {
+	if v, ok := meta[LocalPathFlag].(string); ok {
 		local.Path = v
 	}
 
@@ -383,4 +408,16 @@ func (dep *Dependencies) UnmarshalLockTOML(data string) error {
 	}
 
 	return nil
+}
+
+func parseArtifactRef(ociURL string) (*registry.Reference, error) {
+	if !strings.HasPrefix(ociURL, "oci://") {
+		return nil, fmt.Errorf("OCI URL must be in format 'oci://<domain>/<org>/<repo>'")
+	}
+	url := strings.TrimPrefix(ociURL, "oci://")
+	ref, err := registry.ParseReference(url)
+	if err != nil {
+		return nil, fmt.Errorf("'%s' invalid URL format: %w", ociURL, err)
+	}
+	return &ref, nil
 }
