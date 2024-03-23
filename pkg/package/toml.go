@@ -97,7 +97,11 @@ func (source *Source) MarshalTOML() string {
 	if source.Oci != nil {
 		ociToml := source.Oci.MarshalTOML()
 		if len(ociToml) != 0 {
-			sb.WriteString(ociToml)
+			if len(source.Oci.Reg) != 0 && len(source.Oci.Repo) != 0 {
+				sb.WriteString(fmt.Sprintf(SOURCE_PATTERN, ociToml))
+			} else {
+				sb.WriteString(ociToml)
+			}
 		}
 	}
 
@@ -134,6 +138,15 @@ func (git *Git) MarshalTOML() string {
 
 func (oci *Oci) MarshalTOML() string {
 	var sb strings.Builder
+	if len(oci.Reg) != 0 && len(oci.Repo) != 0 {
+		ociStr := fmt.Sprintf("oci://%s/%s", oci.Reg, oci.Repo)
+		sb.WriteString(ociStr)
+		if len(oci.Tag) != 0 {
+			sb.WriteString(SEPARATOR)
+			sb.WriteString(fmt.Sprintf(GIT_TAG_PATTERN, oci.Tag))
+		}
+		return sb.String()
+	}
 	if len(oci.Tag) != 0 {
 		sb.WriteString(fmt.Sprintf(`"%s"`, oci.Tag))
 	}
