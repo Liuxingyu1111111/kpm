@@ -15,6 +15,8 @@ import (
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/otiai10/copy"
 	"kcl-lang.io/kcl-go/pkg/kcl"
+	"oras.land/oras-go/v2"
+
 	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/errors"
@@ -26,7 +28,6 @@ import (
 	"kcl-lang.io/kpm/pkg/runner"
 	"kcl-lang.io/kpm/pkg/settings"
 	"kcl-lang.io/kpm/pkg/utils"
-	"oras.land/oras-go/v2"
 )
 
 // KpmClient is the client of kpm.
@@ -935,9 +936,11 @@ func (c *KpmClient) DownloadFromOci(dep *pkg.Oci, localPath string) (string, err
 		return "", err
 	}
 
-	matches, finderr := filepath.Glob(filepath.Join(localPath, "*.tar"))
-	if finderr != nil || len(matches) != 1 {
-		if finderr == nil {
+	matches, _ := filepath.Glob(filepath.Join(localPath, "*.tar"))
+	if matches == nil || len(matches) != 1 {
+		// then try to glob tgz file
+		matches, _ = filepath.Glob(filepath.Join(localPath, "*.tgz"))
+		if matches == nil || len(matches) != 1 {
 			err = reporter.NewErrorEvent(
 				reporter.InvalidKclPkg,
 				err,
@@ -953,11 +956,15 @@ func (c *KpmClient) DownloadFromOci(dep *pkg.Oci, localPath string) (string, err
 	}
 
 	tarPath := matches[0]
-	untarErr := utils.UnTarDir(tarPath, localPath)
-	if untarErr != nil {
+	if utils.IsTar(tarPath) {
+		err = utils.UnTarDir(tarPath, localPath)
+	} else {
+		err = utils.ExtractTarball(tarPath, localPath)
+	}
+	if err != nil {
 		return "", reporter.NewErrorEvent(
 			reporter.FailedUntarKclPkg,
-			untarErr,
+			err,
 			fmt.Sprintf("failed to untar the kcl package tar from '%s' into '%s'.", tarPath, localPath),
 		)
 	}
